@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+
+<body>
+<canvas id="mycanvas" width="800" height="400"></canvas>
+<ul id="data"></ul>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/smoothie/1.27.0/smoothie.min.js"></script>
+<script>
+// FROM http://smoothiecharts.org/tutorial.html
+// Data
+const lines = [];
+
+var smoothie = new SmoothieChart();
+ smoothie.streamTo(document.getElementById("mycanvas"), 1000 /*delay*/); 
+
+// connect to sever
+var socket = new WebSocket("ws://127.0.0.1:8080/");
+
+let isFirst = true;
+const dataNode = document.getElementById('data');
+
+socket.onmessage = function(event) {
+  const points = JSON.parse(event.data);
+  console.log('received:', points);
+
+  if (isFirst) {
+    isFirst = false;
+    for (let i = 0 ; i < points.length ; i++) {
+      lines[i] = new TimeSeries();
+      smoothie.addTimeSeries(lines[i], {strokeStyle:'rgb(' + (i % 3 === 0 ? 255 : 0) + ', ' + (i % 3 === 1 ? 255 : 0) + ', ' + (i % 3 === 2 ? 255 : 0) + ')'});
+    }
+  }
+
+  dataNode.innerHTML = '';
+  for (let i = 0 ; i < points.length ; i++) {
+    const adjustedValue = points[i] / 10;
+    lines[i].append(new Date().getTime(), adjustedValue);
+    const li = document.createElement('li');
+    li.textContent = adjustedValue;
+    dataNode.appendChild(li);    
+  }
+}
+</script>
+</html>
